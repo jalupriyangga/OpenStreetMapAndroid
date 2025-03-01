@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
         jembatanViewModel.getJembatanData().observe(this) { jembatanList ->
             if (jembatanList != null) {
                 initMarker(jembatanList)
+                Toast.makeText(this, "ADA", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Failed to load data", Toast.LENGTH_SHORT).show()
             }

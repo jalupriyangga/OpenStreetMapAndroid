@@ -69,4 +69,6 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:4.9.3' // Update to latest
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0" // Update to latest
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.7.0" // Update to latest
+    implementation("androidx.activity:activity-ktx:1.8.2") // Use the latest version
+    implementation("androidx.fragment:fragment-ktx:1.6.2") // Use the latest version
 }
