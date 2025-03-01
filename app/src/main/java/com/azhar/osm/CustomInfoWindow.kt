@@ -1,38 +1,35 @@
 package com.azhar.osm
 
-import kotlinx.android.synthetic.main.layout_tooltip.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.widget.Toast
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.infowindow.InfoWindow
-
-/**
- * Created by Azhar Rivaldi on 24-02-2022
- * Youtube Channel : https://bit.ly/2PJMowZ
- * Github : https://github.com/AzharRivaldi
- * Twitter : https://twitter.com/azharrvldi_
- * Instagram : https://www.instagram.com/azhardvls_
- * Linkedin : https://www.linkedin.com/in/azhar-rivaldi
- */
+import com.azhar.osm.databinding.LayoutTooltipBinding // Import your generated binding class
 
 class CustomInfoWindow(mapView: MapView?) : InfoWindow(R.layout.layout_tooltip, mapView) {
 
-    override fun onClose() {
-        //by default, do nothing
-    }
+    private var binding: LayoutTooltipBinding? = null
 
     override fun onOpen(item: Any) {
         val marker = item as Marker
-        val infoWindowData = marker.relatedObject as ModelMain
+        val infoWindowData = marker.relatedObject as ModelJembatanTrialItem // Change this line
 
-        val tvNamaLokasi = mView.tvNamaLokasi
-        val tvAlamat = mView.tvAlamat
-        val imageClose = mView.imageClose
+        // Inflate the binding
+        binding = LayoutTooltipBinding.bind(mView)
 
-        tvNamaLokasi.text = infoWindowData.strName
-        tvAlamat.text = infoWindowData.strVicinity
-        imageClose.setOnClickListener {
+        // Set the data
+        binding?.tvNamaLokasi?.text = infoWindowData.nama_jembatan // Use the correct property
+        binding?.tvAlamat?.text = infoWindowData.kode_jembatan // Use the correct property
+
+        binding?.imageClose?.setOnClickListener {
             marker.closeInfoWindow()
         }
+    }
 
+    override fun onClose() {
+        // Clean up the binding to avoid memory leaks
+        binding = null
     }
 }

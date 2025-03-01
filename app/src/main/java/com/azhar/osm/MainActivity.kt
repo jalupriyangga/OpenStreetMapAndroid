@@ -7,9 +7,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.azhar.osm.databinding.ActivityMainBinding
-import com.azhar.osm.ModelJembatanTrialItem
 import androidx.activity.viewModels
-import com.azhar.osm.viewmodel.JembatanViewModel
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
