@@ -2,11 +2,14 @@ package com.azhar.osm
 
 import android.os.Bundle
 import android.preference.PreferenceManager
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import kotlinx.android.synthetic.main.activity_main.*
-import org.json.JSONException
-import org.json.JSONObject
+import androidx.core.content.ContextCompat
+import com.azhar.osm.databinding.ActivityMainBinding
+import com.azhar.osm.ModelJembatanTrialItem
+import androidx.activity.viewModels
+import com.azhar.osm.viewmodel.JembatanViewModel
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -14,114 +17,71 @@ import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapController
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.OverlayItem
-import java.io.IOException
-import java.nio.charset.StandardCharsets
 
 class MainActivity : AppCompatActivity() {
-    var modelMainList: MutableList<ModelMain> = ArrayList()
-    lateinit var mapController: MapController
-    lateinit var overlayItem: ArrayList<OverlayItem>
+    private lateinit var binding: ActivityMainBinding
+    private val jembatanViewModel: JembatanViewModel by viewModels()
+    private lateinit var mapController: MapController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this))
 
-        val geoPoint = GeoPoint(-6.3035467, 106.8693513)
-        mapView.setMultiTouchControls(true)
-        mapView.controller.animateTo(geoPoint)
-        mapView.setTileSource(TileSourceFactory.DEFAULT_TILE_SOURCE)
-        mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
+        val geoPoint = GeoPoint(-1.106699577, 114.153301002)
+        binding.mapView.setMultiTouchControls(true)
+        binding.mapView.controller.animateTo(geoPoint)
+        binding.mapView.setTileSource(TileSourceFactory.DEFAULT_TILE_SOURCE)
+        binding.mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
 
-        mapController = mapView.controller as MapController
+        mapController = binding.mapView.controller as MapController
         mapController.setCenter(geoPoint)
-        mapController.zoomTo(15)
+        mapController.zoomTo(12)
 
-        getLocationMarker()
-    }
-
-    //get lat long
-    private fun getLocationMarker() {
-            try {
-                val stream = assets.open("sample_maps.json")
-                val size = stream.available()
-                val buffer = ByteArray(size)
-                stream.read(buffer)
-                stream.close()
-                val strContent = String(buffer, StandardCharsets.UTF_8)
-                try {
-                    val jsonObject = JSONObject(strContent)
-                    val jsonArrayResult = jsonObject.getJSONArray("results")
-                    for (i in 0 until jsonArrayResult.length()) {
-                        val jsonObjectResult = jsonArrayResult.getJSONObject(i)
-                        val modelMain = ModelMain()
-                        modelMain.strName = jsonObjectResult.getString("name")
-                        modelMain.strVicinity = jsonObjectResult.getString("vicinity")
-
-                        //get lat long
-                        val jsonObjectGeo = jsonObjectResult.getJSONObject("geometry")
-                        val jsonObjectLoc = jsonObjectGeo.getJSONObject("location")
-                        modelMain.latLoc = jsonObjectLoc.getDouble("lat")
-                        modelMain.longLoc = jsonObjectLoc.getDouble("lng")
-                        modelMainList.add(modelMain)
-                    }
-                    initMarker(modelMainList)
-                } catch (e: JSONException) {
-                    e.printStackTrace()
-                }
-            } catch (ignored: IOException) {
-                Toast.makeText(
-                    this@MainActivity,
-                    "Oops, ada yang tidak beres. Coba ulangi beberapa saat lagi.",
-                    Toast.LENGTH_SHORT
-                ).show()
+        // Observe the LiveData from the ViewModel
+        jembatanViewModel.getJembatanData().observe(this) { jembatanList ->
+            if (jembatanList != null) {
+                initMarker(jembatanList)
+            } else {
+                Toast.makeText(this, "Failed to load data", Toast.LENGTH_SHORT).show()
             }
         }
 
-    private fun initMarker(modelList: List<ModelMain>) {
-        for (i in modelList.indices) {
-            overlayItem = ArrayList()
-            overlayItem.add(
-                OverlayItem(
-                    modelList[i].strName, modelList[i].strVicinity, GeoPoint(
-                        modelList[i].latLoc, modelList[i].longLoc
-                    )
-                )
-            )
-            val info = ModelMain()
-            info.strName = modelList[i].strName
-            info.strVicinity = modelList[i].strVicinity
+        // Fetch data from the API
+        jembatanViewModel.getJembatanData()
+    }
 
-            val marker = Marker(mapView)
-            marker.icon = resources.getDrawable(R.drawable.ic_place)
-            marker.position = GeoPoint(modelList[i].latLoc, modelList[i].longLoc)
-            marker.relatedObject = info
-            marker.infoWindow = CustomInfoWindow(mapView)
-            marker.setOnMarkerClickListener { item, arg1 ->
+    private fun initMarker(modelList: List<ModelJembatanTrialItem>) {
+        for (item in modelList) {
+            Log.d("MarkerInfo", "Adding marker: ${item.nama_jembatan} at (${item.koordinat_y}, ${item.koordinat_x})")
+
+            val overlayItem = OverlayItem(item.nama_jembatan, item.alamat_jembatan, GeoPoint(item.koordinat_y, item.koordinat_x))
+            val marker = Marker(binding.mapView)
+            marker.icon = ContextCompat.getDrawable(this, R.drawable.ic_place)
+            marker.position = GeoPoint(item.koordinat_y, item.koordinat_x)
+            marker.relatedObject = item
+            marker.infoWindow = CustomInfoWindow(binding.mapView)
+            marker.setOnMarkerClickListener { item, _ ->
                 item.showInfoWindow()
                 true
             }
 
-            mapView.overlays.add(marker)
-            mapView.invalidate()
+            binding.mapView.overlays.add(marker)
+            binding.mapView.invalidate()
         }
     }
 
-    public override fun onResume() {
+    override fun onResume() {
         super.onResume()
         Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this))
-        if (mapView != null) {
-            mapView.onResume()
-        }
+        binding.mapView.onResume()
     }
 
-    public override fun onPause() {
+    override fun onPause() {
         super.onPause()
         Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this))
-        if (mapView != null) {
-            mapView.onPause()
-        }
+        binding.mapView.onPause()
     }
-
 }
